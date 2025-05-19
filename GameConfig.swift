@@ -8,7 +8,8 @@ enum GameConfig {
     /// Upward impulse applied when jumping.
     /// Higher value gives a more "Mario" style arc.
     static let jumpImpulse            = CGVector(dx: 0, dy: 480)
-    static let cameraLead: CGFloat    = 140        // Camera looks ahead of Sung
+    /// Distance from the screen edge before the camera begins scrolling.
+    static let cameraEdge: CGFloat    = 140
 
     static let enemySpawnGap: CGFloat = 500        // Distance between enemy spawns
     static let envSpawnGap: CGFloat   = 300        // Distance between background buildings
