@@ -11,22 +11,26 @@ struct TouchControls: View {
             if !hasKeyboard {
                 VStack {
                     Spacer()
-                    HStack(spacing: 40) {
+                    HStack {
                         HoldButton(symbol: "chevron.left.circle.fill") {
                             scene.setMoveDir(-1)
                         } onUp: {
                             scene.setMoveDir(0)
                         }
-                        HoldButton(symbol: "arrow.up.circle.fill") {
-                            scene.jump()
-                        }
-                        HoldButton(symbol: "chevron.right.circle.fill") {
-                            scene.setMoveDir(1)
-                        } onUp: {
-                            scene.setMoveDir(0)
+                        Spacer()
+                        VStack(spacing: 20) {
+                            HoldButton(symbol: "arrow.up.circle.fill") {
+                                scene.jump()
+                            }
+                            HoldButton(symbol: "chevron.right.circle.fill") {
+                                scene.setMoveDir(1)
+                            } onUp: {
+                                scene.setMoveDir(0)
+                            }
                         }
                     }
                     .font(.system(size: 48))
+                    .padding(.horizontal, 30)
                     .padding(.bottom, 30)
                 }
                 .onAppear(perform: setupListeners)
