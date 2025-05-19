@@ -90,7 +90,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         guard !gameOver,
               let body = sung.physicsBody,
               abs(body.velocity.dy) < 1 else { return }
-        body.applyImpulse(GameConfig.jumpImpulse)
+        // Limit jumping so Sung only reaches roughly mid-screen height
+        let maxY = frame.midY
+        let dy = maxY - sung.position.y
+        guard dy > 0 else { return }
+
+        let gravity = abs(physicsWorld.gravity.dy)
+        let targetVel = sqrt(2 * gravity * dy)
+        body.velocity = CGVector(dx: body.velocity.dx, dy: 0)
+        body.applyImpulse(CGVector(dx: 0, dy: targetVel * body.mass))
     }
 
     // ───────────────────────── Game loop
