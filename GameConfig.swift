@@ -14,5 +14,9 @@ enum GameConfig {
     static let enemySpawnGap: CGFloat = 500        // Distance between enemy spawns
     static let envSpawnGap: CGFloat   = 300        // Distance between background buildings
 
+    static let tenantPatrolRange: CGFloat = 80     // How far tenants pace
+    static let gavelUpTime: TimeInterval   = 1.0   // Time gavel stays raised
+    static let gavelDownTime: TimeInterval = 2.0   // Time between raises
+
     static let skyColor               = UIColor.cyan.withAlphaComponent(0.15)
 }

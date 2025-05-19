@@ -7,6 +7,7 @@ struct PhysicsCategory {
     static let ground: UInt32 = 1 << 1
     static let judge:  UInt32 = 1 << 2
     static let tenant: UInt32 = 1 << 3
+    static let gavel:  UInt32 = 1 << 4
 }
 
 // MARK: - Main Scene
@@ -51,7 +52,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         sung.physicsBody = SKPhysicsBody(circleOfRadius: 25)
         sung.physicsBody?.allowsRotation = false
         sung.physicsBody?.categoryBitMask = PhysicsCategory.sung
-        sung.physicsBody?.contactTestBitMask = PhysicsCategory.judge | PhysicsCategory.tenant
+        sung.physicsBody?.contactTestBitMask = PhysicsCategory.judge | PhysicsCategory.tenant | PhysicsCategory.gavel
         sung.physicsBody?.collisionBitMask = PhysicsCategory.ground | PhysicsCategory.judge | PhysicsCategory.tenant
         addChild(sung)
     }
@@ -138,12 +139,50 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             enemy.physicsBody?.collisionBitMask = PhysicsCategory.none
             addChild(enemy)
 
-            let speed: CGFloat = 100
-            let distance       = enemy.position.x + 1000
-            enemy.run(.sequence([.moveBy(x: -distance, y: 0,
-                                         duration: TimeInterval(distance / speed)),
-                                 .removeFromParent()]))
+            enemy.run(.sequence([.wait(forDuration: 30), .removeFromParent()]))
+
+            if isJudge {
+                addGavel(to: enemy)
+            } else {
+                addTenantMovement(to: enemy)
+            }
         }
+    }
+
+    private func addTenantMovement(to enemy: SKNode) {
+        let range = GameConfig.tenantPatrolRange
+        let duration = TimeInterval(range / 40)
+        let moveLeft = SKAction.moveBy(x: -range, y: 0, duration: duration)
+        let moveRight = SKAction.moveBy(x: range, y: 0, duration: duration)
+        enemy.run(.repeatForever(.sequence([moveLeft, moveRight])))
+    }
+
+    private func addGavel(to enemy: SKNode) {
+        let gavel = Sprites.make(.gavel, size: CGSize(width: 20, height: 20))
+        gavel.position = CGPoint(x: 0, y: 40)
+        gavel.isHidden = true
+        gavel.physicsBody = SKPhysicsBody(rectangleOf: gavel.size)
+        gavel.physicsBody?.isDynamic = false
+        gavel.physicsBody?.categoryBitMask = PhysicsCategory.none
+        gavel.physicsBody?.contactTestBitMask = PhysicsCategory.sung
+        gavel.physicsBody?.collisionBitMask = PhysicsCategory.none
+        enemy.addChild(gavel)
+
+        let raise = SKAction.run {
+            gavel.isHidden = false
+            gavel.physicsBody?.categoryBitMask = PhysicsCategory.gavel
+        }
+        let lower = SKAction.run {
+            gavel.isHidden = true
+            gavel.physicsBody?.categoryBitMask = PhysicsCategory.none
+        }
+        let cycle = SKAction.sequence([
+            .wait(forDuration: GameConfig.gavelDownTime),
+            raise,
+            .wait(forDuration: GameConfig.gavelUpTime),
+            lower
+        ])
+        gavel.run(.repeatForever(cycle))
     }
 
     private func spawnEnvironmentIfNeeded() {
@@ -168,6 +207,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         let other = contact.bodyA.categoryBitMask == PhysicsCategory.sung
                     ? contact.bodyB : contact.bodyA
         guard let node = other.node else { return }
+
+        if other.categoryBitMask == PhysicsCategory.gavel {
+            showMessage("OTSC GRANTED")
+            endGame()
+            return
+        }
 
         let stomp = sung.position.y > node.position.y + 20 &&
                    (sung.physicsBody?.velocity.dy ?? 0) < 0
