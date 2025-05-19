@@ -17,6 +17,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     private var moveDir = 0   // –1 left, 0 idle, 1 right
     private var gameOver = false
 
+    /// Update the horizontal movement direction from touch controls.
+    func setMoveDir(_ dir: Int) {
+        moveDir = dir
+    }
+
     // Spawn distance tracking
     private var lastEnemyX: CGFloat = 0
     private var lastEnvX:   CGFloat = 0
@@ -81,7 +86,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         }
     }
 
-    private func jump() {
+    func jump() {
         guard !gameOver,
               let body = sung.physicsBody,
               abs(body.velocity.dy) < 1 else { return }
