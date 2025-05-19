@@ -100,9 +100,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // Move left/right
         sung.physicsBody?.velocity.dx = CGFloat(moveDir) * GameConfig.runSpeed
 
-        // Camera follow
-        camera?.position = CGPoint(x: sung.position.x + GameConfig.cameraLead,
-                                   y: frame.midY)
+        // Camera follow with a soft edge so Sung can run toward the screen side
+        if let cam = camera {
+            let edge = GameConfig.cameraEdge
+            let dx = sung.position.x - cam.position.x
+            if dx > edge { cam.position.x = sung.position.x - edge }
+            if dx < -edge { cam.position.x = sung.position.x + edge }
+            cam.position.y = frame.midY
+        }
 
         // Spawn scenery & enemies
         spawnEnemiesIfNeeded()
