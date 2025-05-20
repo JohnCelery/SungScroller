@@ -7,6 +7,7 @@ struct PhysicsCategory {
     static let ground: UInt32 = 1 << 1
     static let judge:  UInt32 = 1 << 2
     static let tenant: UInt32 = 1 << 3
+    static let powerUp: UInt32 = 1 << 4
 }
 
 // MARK: - Main Scene
@@ -16,6 +17,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     private let sung = Sprites.make(.sung, size: CGSize(width: 50, height: 50))
     private var moveDir = 0   // –1 left, 0 idle, 1 right
     private var gameOver = false
+    private var hits = 0
+    private var evictionPowerActive = false
 
     /// Update the horizontal movement direction from touch controls.
     func setMoveDir(_ dir: Int) {
@@ -25,6 +28,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     // Spawn distance tracking
     private var lastEnemyX: CGFloat = 0
     private var lastEnvX:   CGFloat = 0
+    private var lastPowerUpX: CGFloat = 0
 
     // ───────────────────────── Scene setup
     override func didMove(to view: SKView) {
@@ -32,6 +36,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         physicsWorld.contactDelegate = self
         backgroundColor = GameConfig.skyColor
 
+        hits = 0
+        evictionPowerActive = false
+        lastPowerUpX = 0
+        
         createGround()
         createSung()
         setupCamera()
@@ -51,7 +59,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         sung.physicsBody = SKPhysicsBody(circleOfRadius: 25)
         sung.physicsBody?.allowsRotation = false
         sung.physicsBody?.categoryBitMask = PhysicsCategory.sung
-        sung.physicsBody?.contactTestBitMask = PhysicsCategory.judge | PhysicsCategory.tenant
+        sung.physicsBody?.contactTestBitMask = PhysicsCategory.judge | PhysicsCategory.tenant | PhysicsCategory.powerUp
         sung.physicsBody?.collisionBitMask = PhysicsCategory.ground | PhysicsCategory.judge | PhysicsCategory.tenant
         addChild(sung)
     }
@@ -120,6 +128,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // Spawn scenery & enemies
         spawnEnemiesIfNeeded()
         spawnEnvironmentIfNeeded()
+        spawnPowerUpIfNeeded()
     }
 
     // ───────────────────────── Spawning
@@ -161,6 +170,24 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         }
     }
 
+    private func spawnPowerUpIfNeeded() {
+        if sung.position.x + GameConfig.powerUpSpawnGap > lastPowerUpX {
+            lastPowerUpX += GameConfig.powerUpSpawnGap
+            let power = Sprites.make(.powerUp, size: CGSize(width: 40, height: 40))
+            power.position = CGPoint(x: lastPowerUpX + 300, y: 120)
+            power.physicsBody = SKPhysicsBody(circleOfRadius: 20)
+            power.physicsBody?.affectedByGravity = false
+            power.physicsBody?.categoryBitMask = PhysicsCategory.powerUp
+            power.physicsBody?.contactTestBitMask = PhysicsCategory.sung
+            power.physicsBody?.collisionBitMask = PhysicsCategory.none
+            addChild(power)
+
+            let dist: CGFloat = power.position.x + 1000
+            power.run(.sequence([.moveBy(x: -dist, y: 0, duration: 60),
+                                .removeFromParent()]))
+        }
+    }
+
     // ───────────────────────── Collisions
     func didBegin(_ contact: SKPhysicsContact) {
         guard !gameOver else { return }
@@ -169,10 +196,17 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                     ? contact.bodyB : contact.bodyA
         guard let node = other.node else { return }
 
+        // Collect power-ups
+        if other.categoryBitMask == PhysicsCategory.powerUp {
+            node.removeFromParent()
+            activatePowerUp()
+            return
+        }
+
         let stomp = sung.position.y > node.position.y + 20 &&
                    (sung.physicsBody?.velocity.dy ?? 0) < 0
 
-        if stomp {
+        if stomp || evictionPowerActive {
             let text = other.categoryBitMask == PhysicsCategory.tenant
                      ? "EVICTED!" : "OVERRULED!"
             showMessage(text)
@@ -182,8 +216,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             sung.physicsBody?.velocity.dy = 0
             sung.physicsBody?.applyImpulse(CGVector(dx: 0, dy: 220))
         } else {
-            showMessage("OTSC GRANTED")
-            endGame()
+            hits += 1
+            if hits >= GameConfig.maxHits {
+                showMessage("OTSC GRANTED")
+                endGame()
+            } else {
+                let remaining = GameConfig.maxHits - hits
+                showMessage("Ouch! \(remaining) left")
+            }
         }
     }
 
@@ -202,8 +242,17 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                              .removeFromParent()]))
     }
 
+    private func activatePowerUp() {
+        evictionPowerActive = true
+        showMessage("EVICTION POWER!")
+        let wait = SKAction.wait(forDuration: GameConfig.powerUpDuration)
+        let end  = SKAction.run { [weak self] in self?.evictionPowerActive = false }
+        run(.sequence([wait, end]))
+    }
+
     private func endGame() {
         gameOver = true
         physicsWorld.speed = 0
+        showMessage("GAME OVER")
     }
 }
