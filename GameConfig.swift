@@ -13,6 +13,10 @@ enum GameConfig {
 
     static let enemySpawnGap: CGFloat = 500        // Distance between enemy spawns
     static let envSpawnGap: CGFloat   = 300        // Distance between background buildings
+    static let powerUpSpawnGap: CGFloat = 1200     // Distance between power-up spawns
+
+    static let powerUpDuration: TimeInterval = 5   // Seconds of eviction power
+    static let maxHits: Int = 3                    // Hits before game over
 
     static let skyColor               = UIColor.cyan.withAlphaComponent(0.15)
 }

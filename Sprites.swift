@@ -5,7 +5,7 @@ import UIKit
 /// if none, falls back to an SF-Symbol icon; if that fails, a solid color box.
 enum Sprites {
 
-    enum Kind { case sung, judge, tenant, house, building }
+    enum Kind { case sung, judge, tenant, house, building, powerUp }
 
     static func make(_ kind: Kind, size: CGSize) -> SKSpriteNode {
         let (png, symbol, tint): (String, String, UIColor) = {
@@ -15,6 +15,7 @@ enum Sprites {
             case .tenant:    return ("tenant",    "person.circle",             .systemRed)
             case .house:     return ("house",     "house.fill",                .systemGreen)
             case .building:  return ("building",  "building.2.fill",           .systemTeal)
+            case .powerUp:   return ("eviction",  "doc.text.fill",             .systemOrange)
             }
         }()
 
